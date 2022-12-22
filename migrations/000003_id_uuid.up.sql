@@ -1,0 +1,2 @@
+ALTER TABLE movies
+ALTER COLUMN id TYPE uuid;
