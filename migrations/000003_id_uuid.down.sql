@@ -1,2 +1,0 @@
-ALTER TABLE movies
-ALTER COLUMN id TYPE serial;
