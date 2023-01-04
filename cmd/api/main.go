@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"greenlight.zhaksylyk.kz/internal/data"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +28,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -57,6 +58,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
@@ -74,28 +76,39 @@ func main() {
 	logger.Fatal(err)
 }
 
-func openDB(cfg config) (*sql.DB, error) {
+func openDB(cfg config) (*pgxpool.Pool, error) {
 
-	db, err := sql.Open("postgres", cfg.db.dsn)
+	poolCfg, err := configurePool(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(cfg.db.maxOpenConns)
-	db.SetMaxIdleConns(cfg.db.maxIdleConns)
-	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	conn, err := pgxpool.NewWithConfig(context.Background(), poolCfg)
 	if err != nil {
 		return nil, err
 	}
-	db.SetConnMaxIdleTime(duration)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err = db.PingContext(ctx)
+	err = conn.Ping(ctx)
 	if err != nil {
 		return nil, err
 	}
 	// Return the sql.DB connection pool.
-	return db, nil
+	return conn, nil
+}
+
+func configurePool(cfg config) (*pgxpool.Config, error) {
+	poolCfg, err := pgxpool.ParseConfig(cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+	poolCfg.MaxConns = int32(cfg.db.maxOpenConns)
+	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+	poolCfg.MaxConnIdleTime = duration
+	return poolCfg, nil
 }
