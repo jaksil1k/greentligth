@@ -25,6 +25,8 @@ type Books struct {
 func ValidateBook(v *validator.Validator, book *Books) {
 	v.Check(book.Title != "", "title", "must be provided")
 	v.Check(len(book.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(book.Sales >= 0, "sales", "must be a positive integer")
+	v.Check(book.Pages >= 0, "pages", "must be a positive integer")
 	v.Check(book.Year != 0, "year", "must be provided")
 	v.Check(book.Year >= 1888, "year", "must be greater than 1888")
 	v.Check(book.Year <= int32(time.Now().Year()), "year", "must not be in the future")

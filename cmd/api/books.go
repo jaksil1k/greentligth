@@ -208,6 +208,7 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 	input.Title = app.readString(qs, "title", "")
 	input.Genres = app.readCSV(qs, "genres", []string{})
 	// Read the page and page_size query string values into the embedded struct.
+	input.Filters.Sales = app.readInt(qs, "sales", 0, v)
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	// Read the sort query string value into the embedded struct.
@@ -221,7 +222,7 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	movies, metadata, err := app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
+	movies, err := app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
