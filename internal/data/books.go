@@ -36,6 +36,9 @@ func ValidateBook(v *validator.Validator, book *Books) {
 	v.Check(len(book.Genres) >= 1, "genres", "must contain at least 1 genre")
 	v.Check(len(book.Genres) <= 5, "genres", "must not contain more than 5 genres")
 	v.Check(validator.Unique(book.Genres), "genres", "must not contain duplicate values")
+	v.Check(book.Sales >= 0, "sales", "must positive")
+	v.Check(book.Pages >= 0, "pages", "must be positive")
+	v.Check(book.Pages <= 10000, "pages", "must be less than 10000")
 }
 
 type BookModel struct {
@@ -174,7 +177,7 @@ WHERE id = $1`
 	return nil
 }
 
-func (m BookModel) GetAll(title string, genres []string, filters Filters) ([]*Books, Metadata, error) {
+func (m BookModel) GetAll(title string, sales int32, pages int32, genres []string, filters Filters) ([]*Books, Metadata, error) {
 	// Construct the SQL query to retrieve all movie records.
 	query := fmt.Sprintf(`
 SELECT count(*) OVER(), id, created_at, title, sales, pages, year, runtime, genres, version
@@ -188,7 +191,7 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []any{title, genres, filters.limit(), filters.offset()}
+	args := []any{title, sales, pages, genres, filters.limit(), filters.offset()}
 	// Use QueryContext() to execute the query. This returns a sql.Rows resultset
 	// containing the result.
 	rows, err := m.DB.Query(ctx, query, args...)

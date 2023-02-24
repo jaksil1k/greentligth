@@ -200,6 +200,8 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 	// Embed the new Filters struct.
 	var input struct {
 		Title  string
+		Sales  int32
+		Pages  int32
 		Genres []string
 		data.Filters
 	}
@@ -214,7 +216,7 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 	// Read the sort query string value into the embedded struct.
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 
-	input.Filters.SortSafelist = []string{"id", "title", "year", "runtime", "-id", "-title", "-year", "-runtime"}
+	input.Filters.SortSafelist = []string{"id", "title", "sales", "pages", "year", "runtime", "-id", "-sales", "-pages", "-title", "-year", "-runtime"}
 	// Execute the validation checks on the Filters struct and send a response
 	// containing the errors if necessary.
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
@@ -222,7 +224,7 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	movies, err := app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
+	movies, metadata, err := app.models.Books.GetAll(input.Title, input.Sales, input.Pages, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
